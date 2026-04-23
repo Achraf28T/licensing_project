@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise License Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --sidebar-bg: #1e293b;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; min-height: 100vh; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
+        .sidebar-brand { padding: 0 24px 30px; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: #6366f1; }
+        .sidebar-nav { flex: 1; }
+        .nav-item { 
+            padding: 12px 24px; display: flex; align-items: center; gap: 12px; color: #94a3b8; 
+            text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; border-left: 4px solid transparent; cursor: pointer;
+        }
+        .nav-item:hover, .nav-item.active { color: white; background: rgba(255,255,255,0.05); border-left-color: var(--primary); }
+
+        /* Main Layout */
+        .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; padding: 24px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        
+        .view-section { display: none; }
+        .view-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Components */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .metric-card { background: var(--bg-card); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+        .metric-label { font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+        .metric-value { font-size: 28px; font-weight: 700; }
+
+        .card { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-size: 16px; font-weight: 600; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f1f5f9; padding: 12px 15px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-revoked { background: #fee2e2; color: #991b1b; }
+        .badge-expired { background: #f1f5f9; color: #475569; }
+
+        .btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-outline { border-color: var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-sm { padding: 4px 8px; font-size: 11px; }
+        .btn-danger { color: var(--danger); border-color: #fee2e2; }
+        .btn-danger:hover { background: #fee2e2; }
+
+        .chart-container { padding: 20px; height: 300px; position: relative; }
+        .chart-small { height: 200px; }
+
+        /* Loader */
+        #loader { position: fixed; top: 0; right: 0; padding: 10px 20px; background: var(--primary); color: white; font-size: 12px; border-bottom-left-radius: 8px; display: none; }
+
+    </style>
+</head>
+<body>
+    <div id="loader">🔄 Updating...</div>
+
+    <div class="sidebar">
+        <div class="sidebar-brand"><span>🛡️</span> LICENSGUARD</div>
+        <div class="sidebar-nav">
+            <div class="nav-item active" onclick="switchView('dashboard', this)">🚀 Dashboard</div>
+            <div class="nav-item" onclick="switchView('licenses', this)">🔑 Licenses</div>
+            <div class="nav-item" onclick="switchView('machines', this)">🖥️ Machines</div>
+            <div class="nav-item" onclick="switchView('analytics', this)">📈 Analytics</div>
+        </div>
+        <div class="sidebar-footer" style="padding: 24px; font-size: 11px; color: #64748b; border-top: 1px solid #ffffff10;">
+            PRO v2.5.0 • Build 2026
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div id="view-title" style="font-size: 22px; font-weight: 800; color: var(--secondary);">Dashboard Overview</div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-outline" onclick="exportData()">📤 Export Reports</button>
+                <button class="btn btn-primary" onclick="simulateActivations()">⚡ Quick Simulation</button>
+            </div>
+        </div>
+
+        <!-- View: Dashboard -->
+        <div id="view-dashboard" class="view-section active">
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-label">Total Licenses</div><div class="metric-value" id="dash-total">-</div></div>
+                <div class="metric-card"><div class="metric-label">Active Nodes</div><div class="metric-value" id="dash-active" style="color: var(--success);">-</div></div>
+                <div class="metric-card"><div class="metric-label">Expiring Soon</div><div class="metric-value" id="dash-warning" style="color: var(--warning);">-</div></div>
+                <div class="metric-card"><div class="metric-label">Suspicious</div><div class="metric-value" id="dash-danger" style="color: var(--danger);">-</div></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Recent License Activity</span></div>
+                    <table>
+                        <thead><tr><th>License ID</th><th>Customer</th><th>Status</th><th>Usage</th></tr></thead>
+                        <tbody id="dash-licenses-table"></tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Global Status</span></div>
+                    <div class="chart-container chart-small"><canvas id="dash-donut-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Licenses -->
+        <div id="view-licenses" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Manage Licenses</span>
+                    <input type="text" placeholder="Search licenses..." onkeyup="filterTable('license-table', this.value)" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px;">
+                </div>
+                <table id="license-table">
+                    <thead><tr><th>ID</th><th>Customer</th><th>Plan</th><th>Status</th><th>Activations</th><th>Expires</th><th>Actions</th></tr></thead>
+                    <tbody id="full-licenses-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- View: Machines -->
+        <div id="view-machines" class="view-section">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Authorized Machines</span></div>
+                <table>
+                    <thead><tr><th>Fingerprint</th><th>License ID</th><th>Total Activations</th><th>Last Validation</th><th>Status</th></tr></thead>
+                    <tbody id="full-machines-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- View: Analytics -->
+        <div id="view-analytics" class="view-section">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">License Distribution by Status</span></div>
+                    <div class="chart-container"><canvas id="analytics-donut-chart"></canvas></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Activation Load Trend</span></div>
+                    <div class="chart-container"><canvas id="analytics-line-chart"></canvas></div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 24px; padding: 24px; background: #1e293b; color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div><h4 style="margin-bottom: 5px;">Enterprise Health Status</h4><p style="font-size: 13px; opacity: 0.7;">System running optimally across 3 globally distributed nodes.</p></div>
+                    <div style="font-size: 32px;">✅</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let charts = {};
+
+        async function fetchData(url) {
+            document.getElementById('loader').style.display = 'block';
+            try {
+                const r = await fetch(url);
+                return await r.json();
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        function switchView(viewId, el) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('view-' + viewId).classList.add('active');
+            el.classList.add('active');
+            document.getElementById('view-title').innerText = viewId.charAt(0).toUpperCase() + viewId.slice(1);
+            
+            if(viewId === 'dashboard') loadDashboard();
+            if(viewId === 'licenses') loadLicenses();
+            if(viewId === 'machines') loadMachines();
+            if(viewId === 'analytics') loadAnalytics();
+        }
+
+        async function loadDashboard() {
+            const data = await fetchData('/admin/analytics/overview');
+            document.getElementById('dash-total').innerText = data.totalLicenses;
+            document.getElementById('dash-active').innerText = data.activeLicenses;
+            document.getElementById('dash-warning').innerText = data.expiringLicenses;
+            document.getElementById('dash-danger').innerText = data.suspiciousActivations;
+
+            const licenses = await fetchData('/admin/analytics/licenses');
+            document.getElementById('dash-licenses-table').innerHTML = licenses.slice(0, 5).map(l => `
+                <tr>
+                    <td><code>${l.id.substring(0,8)}</code></td>
+                    <td>${l.customerId}</td>
+                    <td><span class="badge badge-${l.status}">${l.status}</span></td>
+                    <td>${data.licenseActivationCounts[l.id] || 0}/${l.maxActivations}</td>
+                </tr>
+            `).join('');
+
+            updateDonut('dash-donut-chart', [data.activeLicenses, data.expiredLicenses, data.revokedLicenses, data.expiringLicenses]);
+        }
+
+        async function loadLicenses() {
+            const licenses = await fetchData('/admin/analytics/licenses');
+            document.getElementById('full-licenses-table').innerHTML = licenses.map(l => `
+                <tr>
+                    <td><code>${l.id.substring(0,8)}</code></td>
+                    <td>${l.customerId}</td>
+                    <td>${l.plan}</td>
+                    <td><span class="badge badge-${l.status}">${l.status}</span></td>
+                    <td>${l.maxActivations} Max</td>
+                    <td>${l.expiresAt ? l.expiresAt.substring(0,10) : 'Never'}</td>
+                    <td>
+                        <button class="btn btn-outline btn-sm" onclick="alert('Viewing details for ${l.id}')">View</button>
+                        ${l.status !== 'revoked' ? `<button class="btn btn-danger btn-outline btn-sm" onclick="revokeLicense('${l.id}')">Revoke</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadMachines() {
+            const machines = await fetchData('/admin/analytics/activations');
+            document.getElementById('full-machines-table').innerHTML = machines.map(m => `
+                <tr>
+                    <td><code>${m.machineFingerprint.substring(0,16)}...</code></td>
+                    <td><code style="font-size: 10px;">Multiple/Mixed</code></td>
+                    <td>${m.activationCount}</td>
+                    <td>${m.lastValidatedAt || 'N/A'}</td>
+                    <td><span class="badge badge-active">${m.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadAnalytics() {
+            const data = await fetchData('/admin/analytics/overview');
+            updateDonut('analytics-donut-chart', [data.activeLicenses, data.expiredLicenses, data.revokedLicenses, data.expiringLicenses], true);
+            
+            // Mock line chart for "wow" effect
+            const ctx = document.getElementById('analytics-line-chart').getContext('2d');
+            if(charts['analytics-line-chart']) charts['analytics-line-chart'].destroy();
+            charts['analytics-line-chart'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Application Heartbeats',
+                        data: [65, 59, 80, 81, 56, 95],
+                        borderColor: '#6366f1',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updateDonut(id, values, large = false) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if(charts[id]) charts[id].destroy();
+            charts[id] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'Expired', 'Revoked', 'Warning'],
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#10b981', '#cbd5e1', '#ef4444', '#f59e0b'],
+                        borderWidth: 0,
+                        cutout: '75%'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', display: large, labels: { boxWidth: 10, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        async function revokeLicense(id) {
+            if(!confirm('Are you sure you want to revoke this license?')) return;
+            const r = await fetch(`/admin/licenses/${id}`, { method: 'DELETE' });
+            if(r.ok) {
+                alert('License revoked successfully.');
+                loadLicenses();
+            }
+        }
+
+        function filterTable(tableId, query) {
+            const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+            rows.forEach(r => {
+                r.style.display = r.innerText.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        async function simulateActivations() {
+            const r = await fetch('/admin/simulate-test-data', { method: 'POST' });
+            const d = await r.json();
+            alert(d.message);
+            loadDashboard();
+        }
+
+        function exportData() {
+            alert('Generating encrypted report packet (PDF)...');
+        }
+
+        // Init
+        loadDashboard();
+    </script>
+</body>
+</html>

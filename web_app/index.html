@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>License Portal - Premium Access</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.9);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top left, #4f46e5 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            padding: 40px 30px;
+            color: white;
+            text-align: center;
+        }
+
+        .card-header h1 { font-size: 28px; letter-spacing: -0.5px; margin-bottom: 8px; }
+        .card-header p { font-size: 14px; opacity: 0.8; font-weight: 300; }
+
+        .card-body { padding: 32px; }
+
+        .input-group { margin-bottom: 24px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input {
+            width: 100%;
+            padding: 14px 18px;
+            background: #f1f5f9;
+            border: 2px solid transparent;
+            border-radius: 14px;
+            font-size: 15px;
+            transition: all 0.3s;
+            color: #1e293b;
+        }
+
+        input:focus {
+            outline: none;
+            background: white;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .system-info {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .info-pill {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+        .info-value { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .button-stack { display: flex; flex-direction: column; gap: 12px; }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4); }
+
+        .btn-secondary { background: #e2e8f0; color: #475569; }
+        .btn-secondary:hover { background: #cbd5e1; }
+
+        .status-toast {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .status-success { background: #dcfce7; color: #166534; display: block; }
+        .status-error { background: #fee2e2; color: #991b1b; display: block; }
+        .status-loading { background: #eff6ff; color: #1e40af; display: block; }
+
+    </style>
+</head>
+<body>
+    <div class="glass-card">
+        <div class="card-header">
+            <h1>🔐 Secure Activation</h1>
+            <p>Enterprise Licensing System v2.0</p>
+        </div>
+        <div class="card-body">
+            <div class="input-group">
+                <label>API Gateway</label>
+                <input type="url" id="serverUrl" value="http://localhost:8000">
+            </div>
+            <div class="input-group">
+                <label>Activation Key</label>
+                <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX">
+            </div>
+
+            <div class="system-info">
+                <div class="info-pill"><span class="info-label">Environment</span><span class="info-value" id="osInfo">Detecting...</span></div>
+                <div class="info-pill"><span class="info-label">PHP Build</span><span class="info-value" id="phpVersion">-</span></div>
+                <div class="info-pill"><span class="info-label">Fingerprint</span><span class="info-value" id="fingerprint">-</span></div>
+                <div class="info-pill"><span class="info-label">Node Status</span><span class="info-value" id="nodeStatus">Connected</span></div>
+            </div>
+
+            <div id="status"></div>
+
+            <div class="button-stack">
+                <button class="btn-primary" onclick="activate()">Activate License</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <button class="btn-secondary" onclick="test()">Test Node</button>
+                    <button class="btn-secondary" onclick="alert('Checking for updates...')">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function getInfo() {
+            const r = await fetch('/api.php?action=system_info');
+            const d = await r.json();
+            document.getElementById('osInfo').innerText = d.os;
+            document.getElementById('phpVersion').innerText = d.php_version;
+            document.getElementById('fingerprint').innerText = d.fingerprint.substring(0,20) + '...';
+        }
+
+        function showStatus(msg, type) {
+            const s = document.getElementById('status');
+            s.innerText = msg;
+            s.className = 'status-toast status-' + type;
+        }
+
+        async function test() {
+            showStatus('Testing node connectivity...', 'loading');
+            const r = await fetch('/api.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'test_connection', serverUrl: document.getElementById('serverUrl').value })
+            });
+            const d = await r.json();
+            if(d.success) showStatus('✅ Node verified successfully', 'success');
+            else showStatus('❌ Node unreachable', 'error');
+        }
+
+        async function activate() {
+            showStatus('Verifying license with gateway...', 'loading');
+            const r = await fetch('/api.php', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'activate', 
+                    serverUrl: document.getElementById('serverUrl').value,
+                    licenseKey: document.getElementById('licenseKey').value
+                })
+            });
+            const d = await r.json();
+            if(d.success) showStatus('✅ License Secured. ID: ' + d.activationId.substring(0,8), 'success');
+            else showStatus('❌ ' + d.error, 'error');
+        }
+
+        getInfo();
+    </script>
+</body>
+</html>
