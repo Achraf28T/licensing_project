@@ -1,4 +1,4 @@
-# Licensing Project - Enterprise Edition
+# Licensing Project
 
 This is a licensing system built with PHP and Symfony. It provides a robust, end-to-end solution for software protection through secure license management, hardware fingerprinting, and real-time activity monitoring.
 
